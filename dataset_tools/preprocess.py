@@ -78,6 +78,8 @@ def main():
     ap.add_argument("--own", type=Path, help="own ESP32-CAM class folders")
     ap.add_argument("--out", type=Path, default=Path("data/processed"))
     ap.add_argument("--dfire-val", type=float, default=0.15, help="fraction of D-Fire for val")
+    ap.add_argument("--dfire-test", type=float, default=0.0,
+                    help="fraction of D-Fire for a TEMPORARY test set (only until own images exist)")
     ap.add_argument("--own-val", type=float, default=0.20, help="fraction of own images for val")
     ap.add_argument("--own-test", type=float, default=0.30, help="fraction of own images for test")
     ap.add_argument("--dup-threshold", type=int, default=4, help="max dHash bit difference for a duplicate")
@@ -116,6 +118,10 @@ def main():
         if origin == "own":
             parts = ("train", "val", "test")
             counts = split_counts(len(items), (1 - args.own_val - args.own_test, args.own_val, args.own_test))
+        elif args.dfire_test > 0:
+            # Temporary test set while there are no own images yet.
+            parts = ("train", "val", "test")
+            counts = split_counts(len(items), (1 - args.dfire_val - args.dfire_test, args.dfire_val, args.dfire_test))
         else:
             parts = ("train", "val")
             counts = split_counts(len(items), (1 - args.dfire_val, args.dfire_val))

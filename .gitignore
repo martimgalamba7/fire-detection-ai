@@ -20,3 +20,6 @@ firmware/esp32cam_inference/ei_library/
 .vscode/
 build/
 test_fusion
+
+# Edge Impulse API key and other local settings
+.env
