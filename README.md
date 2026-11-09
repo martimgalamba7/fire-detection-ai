@@ -1,5 +1,13 @@
 # Fire Detection System: AI part
 
+[![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
+![Arduino](https://img.shields.io/badge/Arduino-ESP32--CAM-00979D)
+![Arduino](https://img.shields.io/badge/Arduino-MKR%20WAN%201300-00979D)
+![Edge Impulse](https://img.shields.io/badge/Edge%20Impulse-MobileNetV1%20int8-blueviolet)
+![Python](https://img.shields.io/badge/Python-3.12-3776AB)
+![LoRaWAN](https://img.shields.io/badge/LoRaWAN-12%20bytes-orange)
+![Tests](https://img.shields.io/badge/Tests-48%20passing-brightgreen)
+
 On-device smoke and fire recognition for a solar-powered IoT node mounted on a tree.
 The node is meant to spot a wildfire early and send the alert over LoRaWAN.
 
