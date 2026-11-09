@@ -164,4 +164,10 @@ Wi-Fi passwords and API keys are never committed (requirement R24). Copy `secret
 * Model training: [Edge Impulse](https://edgeimpulse.com).
 * Hardware and sensor code: the Fire Detection System project group.
 
-Code in this repository: [MIT](LICENSE). The Edge Impulse library in `models/` keeps its own license (BSD 3-Clause Clear / Apache 2.0).
+The code in this repository is released under the [MIT License](LICENSE).
+
+Third-party content is **not** covered by the MIT License:
+
+* `models/ei_arduino_library_v2.zip` contains the Edge Impulse SDK (BSD 3-Clause Clear, with Apache 2.0 parts
+  such as CMSIS). See the LICENSE files inside the archive.
+* The training images come from the D-Fire dataset (Venâncio et al.) and are not included in this repository.

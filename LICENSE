@@ -20,11 +20,3 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
----------------------------------------------------------------------------
-Third-party content (not covered by the MIT license above):
-
-* models/ei_arduino_library_v2.zip contains the Edge Impulse SDK
-  (BSD 3-Clause Clear, with Apache 2.0 parts such as CMSIS). See the LICENSE
-  files inside the archive.
-* The training images come from the D-Fire dataset (Venâncio et al.) and are
-  not included in this repository.
