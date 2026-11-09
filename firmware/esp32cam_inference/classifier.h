@@ -56,7 +56,7 @@ inline ClassifyStatus classifyFrame(camera_fb_t *fb, FrameScores &out) {
 //        "Sketch > Include Library > Add .ZIP Library").
 //       The header is named <project-name>_inferencing.h
 // ===========================================================================
-#include <fire-detection_inferencing.h>   // PLACEHOLDER
+#include <Challenge3_PassionChallenge_FireDetectionSystem_inferencing.h>   // Edge Impulse export (model v2)
 #include "edge-impulse-sdk/dsp/image/image.hpp"
 
 // RGB888 buffer for the full camera frame (320x240x3 = 230 kB, lives in PSRAM).

@@ -8,7 +8,7 @@
 // 1 = no Edge Impulse library needed; returns fake results so the UART
 //     protocol and the MKR fusion logic can be tested before the model exists.
 // 0 = use the real Edge Impulse library (see INCLUDE in classifier.h).
-#define USE_MOCK_MODEL 1
+#define USE_MOCK_MODEL 0
 
 // ---------------------------------------------------------------------------
 // Voting (FR04 / FR05) - see docs/uart-protocol.md "Voting rules"

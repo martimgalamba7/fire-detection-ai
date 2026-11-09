@@ -78,8 +78,10 @@ python dataset_tools/stats.py data/processed
 
 * With `USE_MOCK_MODEL 1` in `config.h` it runs without a model. Type `CAPTURE` in the
   serial monitor (115200, Newline) and you get a fake `RESULT,...` line.
-* With the real model: add the Edge Impulse ZIP library, set the include in
-  `classifier.h`, and set `USE_MOCK_MODEL 0`.
+* With the real model (default now, model v2): install the Edge Impulse library once:
+  `arduino-cli lib install --zip-path models/ei_arduino_library_v2.zip`
+  (needs `arduino-cli config set library.enable_unsafe_install true`, or in the Arduino IDE:
+  Sketch > Include Library > Add .ZIP Library). Set `USE_MOCK_MODEL 1` in `config.h` to go back to the mock.
 
 ```bash
 arduino-cli compile --fqbn esp32:esp32:esp32cam firmware/esp32cam_inference
