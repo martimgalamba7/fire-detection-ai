@@ -1,7 +1,8 @@
 # Model card: fire / smoke / normal classifier
 
-> Template. Fill in the `TODO` fields after training. Keep numbers honest:
-> report test-set results on **own ESP32-CAM images only**.
+> Status: model v2 (`models/fire_v2b_int8.lite`, Edge Impulse version 1). Results below use an **interim test set of
+> held-out D-Fire images**. The final test set must be own ESP32-CAM images only; fields still marked `TODO` need that
+> data or the real board.
 
 ## Overview
 
@@ -10,7 +11,7 @@
 | Task | Image classification, 3 classes |
 | Classes | `smoke`, `fire`, `normal` |
 | Platform | ESP32-CAM (AI-Thinker, OV2640), on-device |
-| Tool | Edge Impulse, project: `TODO link` |
+| Tool | Edge Impulse (private project "Challenge3_PassionChallenge_FireDetectionSystem", version 1) |
 | Architecture | MobileNetV1 transfer learning, alpha 0.25, input 96x96 RGB, resize mode "Fit shortest axis" |
 | Quantisation | int8 |
 | Version / date | v2, 2026-11-09 (`models/fire_v2_int8.lite`) |
@@ -26,8 +27,8 @@
 
 | Source | smoke | fire | normal | Used for |
 |--------|-------|------|--------|----------|
-| D-Fire subset | TODO | TODO | TODO | train / val |
-| Own ESP32-CAM images | TODO | TODO | TODO | train / val / **test** |
+| D-Fire subset | 1411 | 1372 | 1060 | train 2693 / val 575 / interim test 575 |
+| Own ESP32-CAM images | TODO | TODO | TODO | train / val / **test** (not collected yet) |
 
 (`python dataset_tools/stats.py data/processed` produces this table.)
 
@@ -43,42 +44,48 @@
 
 | Setting | Value |
 |---------|-------|
-| Epochs | TODO |
-| Learning rate | TODO |
-| Data augmentation | TODO |
-| Resize mode | TODO (squash / fit / crop) |
+| Epochs | 50 |
+| Learning rate | 0.0005 |
+| Data augmentation | on (Edge Impulse default: flips, crops, brightness) |
+| Resize mode | Fit shortest axis (centre crop), the same as the camera firmware |
 
-## Results (test set: own images only)
+## Results (interim test set: 575 held-out D-Fire images)
 
 | Metric | Value |
 |--------|-------|
-| Accuracy | TODO |
-| Smoke recall / precision | TODO |
-| Fire recall / precision | TODO |
-| Hazard recall (smoke+fire vs normal) | TODO |
-| False-positive rate on `normal` | TODO |
+| Accuracy (top class) | 0.73 |
+| Smoke recall / precision | 0.73 / 0.68 |
+| Fire recall / precision | 0.89 / 0.81 |
+| Hazard recall (smoke+fire vs normal), threshold 0.70 | 0.69 |
+| False-alarm rate on `normal`, threshold 0.70 | 0.14 |
+| Same metrics on own ESP32-CAM test images | TODO |
 
-Confusion matrix: `evaluation/out/confusion_matrix.png` (TODO attach).
+Confusion matrix: [`evaluation/out/confusion_matrix_v2b.png`](../evaluation/out/confusion_matrix_v2b.png).
 
 ## On-device performance
 
 | Item | Value |
 |------|-------|
-| Inference time per frame | TODO ms |
-| Total `CAPTURE` → `RESULT` (3 frames) | TODO ms |
-| RAM / flash used | TODO |
-| Current during inference | TODO mA (R19) |
+| Inference time per frame | TODO ms (measure on the board; printed by the sketch) |
+| Total `CAPTURE` → `RESULT` (3 frames) | TODO ms (`capture took ... ms` on the serial monitor) |
+| RAM / flash used | whole sketch: 1.29 MB flash (40%), 67 kB static RAM (20%); image buffers in PSRAM |
+| Current during inference | TODO mA (R19, measure with a multimeter) |
 
 ## Decision settings
 
-`CONFIDENCE_THRESHOLD = TODO (default 0.70)`, `NUM_FRAMES = TODO (3)`, `MIN_VOTES = TODO (2)`.
-Explain why these values were chosen, e.g. from a threshold sweep with `confusion_matrix.py --sweep`.
+`CONFIDENCE_THRESHOLD = 0.70`, `NUM_FRAMES = 3`, `MIN_VOTES = 2`.
+
+The threshold sweep (`confusion_matrix.py --sweep`) shows the trade-off per frame: 0.60 finds 77 % of hazards with
+23 % false alarms, 0.70 finds 69 % with 13 %, 0.80 finds 56 % with 7 %. 0.70 was chosen because the camera is only
+asked after a gas anomaly, and 2-of-3 voting plus the fusion rule lower false alarms further, while missing a real
+fire costs more than an extra SUSPECT state. To re-check with own images.
 
 ## Limitations
 
-* TODO e.g. at night the camera sees little; the flame sensor covers this.
-* TODO small dataset; outdoor lighting conditions limited to the test weeks.
-* TODO smoke far away may be too small at 96x96.
+* At night the camera sees little; the flame sensor covers this case in the fusion rule.
+* Trained mostly on D-Fire images from better cameras; accuracy on ESP32-CAM images is still unknown (domain gap).
+* Smoke that covers less than about 5 % of the picture (far away) is too small at 96x96 and was removed from training.
+* Thick white clouds, fog and vapour are the hardest `normal` cases; most errors are smoke vs normal.
 
 ## Version history (interim test set: held-out D-Fire images, NOT own camera images yet)
 
