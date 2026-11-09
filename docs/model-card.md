@@ -16,6 +16,30 @@
 | Quantisation | int8 |
 | Version / date | v2, 2026-11-09 (`models/fire_v2_int8.lite`) |
 
+## Model and why we chose it
+
+**What it is.** MobileNetV1 is a small convolutional neural network made for phones and microcontrollers.
+The alpha value (0.25) shrinks every layer to 25 % of its width, which gives the smallest and fastest variant.
+The model file is about 300 kB in int8 (`models/fire_v2b_int8.lite`).
+
+**Transfer learning.** We did not train the network from scratch. Edge Impulse starts from a MobileNetV1 that was
+already trained on ImageNet (over a million everyday photos), so its layers already recognise edges, colours and
+textures. Only the last layer is trained on our three classes. This is why a few thousand images and a few minutes
+of training are enough.
+
+**Quantisation (int8).** The weights are stored as 8-bit integers instead of 32-bit floats. The model becomes about
+4x smaller and much faster on the ESP32, which has no AI accelerator. The cost is a small loss in accuracy.
+
+**Why this model and not another:**
+
+| Option | Why not chosen |
+|--------|----------------|
+| MobileNetV2 0.35 (tried as v3) | Best in float32 (0.82 validation), but drops to 0.66 after int8 quantisation and is slower (Edge Impulse estimate on ESP32: 1481 ms, 249 kB RAM, 522 kB flash per inference). |
+| MobileNetV1 0.1 | Faster, but less capacity; smoke vs fog/vapour already is the hardest case. |
+| Object detection (YOLO, FOMO) | We only need "is there smoke/fire in the picture", not where; detection models are larger and need box labels. |
+| Larger networks (ResNet, EfficientNet) | Do not fit in the ESP32-CAM memory or are far too slow. |
+| No AI (colour rules) | Cannot tell smoke from fog, clouds or steam, which is the main goal of FR03. |
+
 ## Class definitions
 
 * **smoke**: visible smoke plume or haze from burning material.
