@@ -11,9 +11,9 @@
 | Classes | `smoke`, `fire`, `normal` |
 | Platform | ESP32-CAM (AI-Thinker, OV2640), on-device |
 | Tool | Edge Impulse, project: `TODO link` |
-| Architecture | MobileNetV1 transfer learning, alpha `TODO 0.1 / 0.25`, input 96x96 `TODO RGB/grayscale` |
+| Architecture | MobileNetV1 transfer learning, alpha 0.25, input 96x96 RGB, resize mode "Fit shortest axis" |
 | Quantisation | int8 |
-| Version / date | `TODO v1, YYYY-MM-DD` |
+| Version / date | v2, 2026-11-09 (`models/fire_v2_int8.lite`) |
 
 ## Class definitions
 
@@ -79,3 +79,12 @@ Explain why these values were chosen, e.g. from a threshold sweep with `confusio
 * TODO e.g. at night the camera sees little; the flame sensor covers this.
 * TODO small dataset; outdoor lighting conditions limited to the test weeks.
 * TODO smoke far away may be too small at 96x96.
+
+## Version history (interim test set: held-out D-Fire images, NOT own camera images yet)
+
+| Version | Data | Accuracy (argmax) | Hazard recall @0.70 | False-alarm rate @0.70 |
+|---------|------|-------------------|---------------------|------------------------|
+| v1 | 1000/class D-Fire, all box sizes; impulse resize = Squash (mismatch with device crop) | 0.58 | 0.46 | 0.08 |
+| v2 | 1500/class D-Fire, smoke boxes >= 5 % / fire >= 1 % of image; Fit shortest axis; 50 epochs | 0.74 | 0.69 | 0.13 |
+
+Per-frame numbers. On the device, 2-of-3 frame voting and the gas+camera fusion reduce false alarms further.
