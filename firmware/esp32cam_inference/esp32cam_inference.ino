@@ -149,8 +149,9 @@ struct LineReader {
   bool poll(Stream &in) {
     while (in.available()) {
       char ch = in.read();
-      if (ch == '\r') continue;
-      if (ch == '\n') {
+      // A line ends with '\n' or '\r' (some serial monitors send only '\r' on Enter).
+      // "\r\n" gives an extra empty line, which handleCommand() ignores.
+      if (ch == '\n' || ch == '\r') {
         buf[len] = '\0';
         bool wasOverflow = overflow;
         len = 0;
