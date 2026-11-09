@@ -1,0 +1,22 @@
+# Secrets (requirement R24) - never commit these
+secrets.h
+**/secrets.h
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Data (too large for git; keep it local or on a shared drive)
+data/
+*.zip
+
+# Edge Impulse exported library (downloaded per build)
+firmware/esp32cam_inference/ei_library/
+
+# OS / editor
+.DS_Store
+.vscode/
+build/
+test_fusion
