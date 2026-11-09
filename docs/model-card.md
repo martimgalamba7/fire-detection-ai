@@ -85,6 +85,10 @@ Explain why these values were chosen, e.g. from a threshold sweep with `confusio
 | Version | Data | Accuracy (argmax) | Hazard recall @0.70 | False-alarm rate @0.70 |
 |---------|------|-------------------|---------------------|------------------------|
 | v1 | 1000/class D-Fire, all box sizes; impulse resize = Squash (mismatch with device crop) | 0.58 | 0.46 | 0.08 |
-| v2 | 1500/class D-Fire, smoke boxes >= 5 % / fire >= 1 % of image; Fit shortest axis; 50 epochs | 0.74 | 0.69 | 0.13 |
+| v2 (chosen) | 1500/class D-Fire, smoke boxes >= 5 % / fire >= 1 % of image; Fit shortest axis; 50 epochs | 0.74 | 0.69 | 0.13 |
+
+| v3 | same data as v2; MobileNetV2 96x96 0.35 | 0.66 (float32 in EI: 0.82 val) | 0.53 | 0.11 |
+
+v3 lost a lot of accuracy in int8 quantisation (float32 0.82 -> int8 0.67 on validation), and it is slower on the ESP32 (EI estimate 1481 ms, 249 kB RAM, 522 kB flash per inference). v2 was kept.
 
 Per-frame numbers. On the device, 2-of-3 frame voting and the gas+camera fusion reduce false alarms further.
