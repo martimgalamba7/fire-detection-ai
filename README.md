@@ -116,6 +116,13 @@ Fusion logic and UART parser, with a simulated camera and clock:
 firmware/mkr_fusion/extras/host_test/run_tests.sh
 ```
 
+Live demo with the laptop webcam. It shows the scores per frame; SPACE runs a `CAPTURE` with the same 3-frame
+voting as the ESP32-CAM:
+
+```bash
+python evaluation/webcam_demo.py
+```
+
 Run the model on a folder of images (`<folder>/<class>/*.jpg`) and score it:
 
 ```bash

@@ -3,3 +3,4 @@ Pillow>=10.0
 numpy>=1.26
 matplotlib>=3.8   # optional: only for the confusion-matrix PNG
 ai-edge-litert>=1.0   # runs the exported .tflite model on the laptop (predict_tflite.py)
+opencv-python>=4.9   # webcam_demo.py (live demo with the laptop camera)
