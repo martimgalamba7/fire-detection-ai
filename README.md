@@ -73,7 +73,7 @@ More detail: [architecture](docs/architecture.md) · [UART protocol](docs/uart-p
 
 | Path | What |
 |------|------|
-| [`docs/`](docs) | Architecture, UART protocol, [hardware setup guide](docs/hardware-setup.md), model card, test log template |
+| [`docs/`](docs) | **[AI design document](docs/AI-Design-Document.pdf)** ([.docx](docs/AI-Design-Document.docx), [diagrams](docs/design)), architecture, UART protocol, [hardware setup guide](docs/hardware-setup.md), model card, test log template |
 | [`firmware/esp32cam_inference/`](firmware/esp32cam_inference) | Camera sketch: waits for `CAPTURE`, classifies, answers. `USE_MOCK_MODEL` for tests without a model |
 | [`firmware/esp32cam_collector/`](firmware/esp32cam_collector) | Web page with smoke/fire/normal buttons to collect training photos |
 | [`firmware/mkr_fusion/`](firmware/mkr_fusion) | Arduino library for the MKR: `CameraLink`, `FireFusion`, `LoraPayload`, plus laptop tests |
