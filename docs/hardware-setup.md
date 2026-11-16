@@ -81,18 +81,19 @@ The adapter's RTS/DTR lines are not connected, so the board must be put into dow
 
    ```
    [dbg] model: Edge Impulse
-   READY
+   READY*4B
    ```
 
    `ERROR,camera_init` means the camera did not start; see [Troubleshooting](#troubleshooting).
 
-4. Type `CAPTURE` and press Enter. **Expected output:**
+4. Type `CAPTURE` and press Enter (the `*XX` checksum is optional when typing by hand; the
+   camera always adds one to its answers, see the [UART protocol](uart-protocol.md#checksum-security-requirement-sec8)). **Expected output:**
 
    ```
    [dbg] frame 1: fire=0.02 smoke=0.10 normal=0.88
    [dbg] frame 2: fire=0.03 smoke=0.08 normal=0.89
    [dbg] frame 3: fire=0.02 smoke=0.11 normal=0.87
-   RESULT,normal,0.88,3/3
+   RESULT,normal,0.88,3/3*07
    [dbg] capture took 1234 ms
    ```
 
