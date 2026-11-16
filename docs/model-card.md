@@ -14,7 +14,7 @@
 | Tool | Edge Impulse (private project "Challenge3_PassionChallenge_FireDetectionSystem", version 1) |
 | Architecture | MobileNetV1 transfer learning, alpha 0.25, input 96x96 RGB, resize mode "Fit shortest axis" |
 | Quantisation | int8 |
-| Version / date | v2, 2026-11-09 (`models/fire_v2_int8.lite`) |
+| Version / date | v2, 2026-11-09 (`models/fire_v2b_int8.lite`, retrained v2) |
 
 ## Model and why we chose it
 
@@ -99,8 +99,8 @@ Confusion matrix: [`evaluation/out/confusion_matrix_v2b.png`](../evaluation/out/
 
 `CONFIDENCE_THRESHOLD = 0.70`, `NUM_FRAMES = 3`, `MIN_VOTES = 2`.
 
-The threshold sweep (`confusion_matrix.py --sweep`) shows the trade-off per frame: 0.60 finds 77 % of hazards with
-23 % false alarms, 0.70 finds 69 % with 13 %, 0.80 finds 56 % with 7 %. 0.70 was chosen because the camera is only
+The threshold sweep (`confusion_matrix.py --sweep`) shows the trade-off per frame: 0.60 finds 79 % of hazards with
+23 % false alarms, 0.70 finds 69 % with 14 %, 0.80 finds 56 % with 7 %. 0.70 was chosen because the camera is only
 asked after a gas anomaly, and 2-of-3 voting plus the fusion rule lower false alarms further, while missing a real
 fire costs more than an extra SUSPECT state. To re-check with own images.
 
@@ -116,8 +116,7 @@ fire costs more than an extra SUSPECT state. To re-check with own images.
 | Version | Data | Accuracy (argmax) | Hazard recall @0.70 | False-alarm rate @0.70 |
 |---------|------|-------------------|---------------------|------------------------|
 | v1 | 1000/class D-Fire, all box sizes; impulse resize = Squash (mismatch with device crop) | 0.58 | 0.46 | 0.08 |
-| v2 (chosen) | 1500/class D-Fire, smoke boxes >= 5 % / fire >= 1 % of image; Fit shortest axis; 50 epochs | 0.74 | 0.69 | 0.13 |
-
+| v2 (chosen) | 1500/class D-Fire, smoke boxes >= 5 % / fire >= 1 % of image; Fit shortest axis; 50 epochs | 0.73 | 0.69 | 0.14 |
 | v3 | same data as v2; MobileNetV2 96x96 0.35 | 0.66 (float32 in EI: 0.82 val) | 0.53 | 0.11 |
 
 v3 lost a lot of accuracy in int8 quantisation (float32 0.82 -> int8 0.67 on validation), and it is slower on the ESP32 (EI estimate 1481 ms, 249 kB RAM, 522 kB flash per inference). v2 was kept.

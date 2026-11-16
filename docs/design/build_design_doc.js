@@ -111,6 +111,7 @@ add(
 
   H1("1. Purpose and Scope", false),
   P("The AI part decides whether what the node sees is an early fire. An image classifier on the **ESP32-CAM** labels camera frames as **smoke**, **fire** or **normal**; a decision (fusion) layer on the **Arduino MKR WAN 1300** combines this with the gas and flame sensors into one alarm. Only a label, a confidence and a vote count leave the camera – never the image – so the alarm fits in a 12-byte LoRaWAN message (NFR04, R15, SEC8)."),
+  P("**Current status.** Working and verified on the laptop: the trained int8 model (evaluated on 575 held-out images), the fusion logic and protocol (53 host unit tests pass) and a webcam demo. Both firmwares compile for the ESP32-CAM and the MKR WAN 1300. Not yet verified: running on the real boards (latency, current, link) and own ESP32-CAM images."),
   P("**In scope:** on-device classification with confidence (FR02–FR04), sensor-triggered capture (FR01), the alert threshold (FR05), the camera–MKR protocol, the fusion logic, the LoRa payload layout and the ML pipeline. **Out of scope:** reading the sensors and gas thresholds (sensor firmware), LoRaWAN/TTN, back end and website (other chapters)."),
 
   H2("1.1 Use cases"),
@@ -171,10 +172,10 @@ add(
   P("**Data.** D-Fire (21,527 images, YOLO boxes) is converted to classes: any fire box → fire, only smoke → smoke, none → normal. Smoke covering < 5 % of the image is removed (too small at 96x96) and near-duplicates are dropped. `normal` also holds hard negatives: fog, steam, vape/shisha clouds, grey clouds, sunsets. The **final test set uses only own camera images**; until they exist, 575 held-out D-Fire images are the interim test set."),
   table(["Version", "Change", "Accuracy", "Hazard recall @0.70", "False alarms @0.70"], [
     ["v1", "MobileNetV1 0.25, all D-Fire, resize mismatch", "58 %", "46 %", "8 %"],
-    ["**v2 (chosen)**", "Tiny smoke removed, crop resize, 50 epochs", "**73 %**", "**69 %**", "14 %"],
+    ["**v2 (chosen, deployed)**", "Tiny smoke removed, crop resize, 50 epochs", "**73 %**", "**69 %**", "14 %"],
     ["v3", "MobileNetV2 0.35 (loses accuracy in int8)", "66 %", "53 %", "11 %"],
   ], [1400, 3826, 1200, 1300, 1300], { fontSize: 17 }),
-  P("Per-frame results on the interim test set; voting and fusion lower false alarms further. The v2 model is about 300 kB; the camera firmware uses 41 % of flash and 20 % of RAM. Threshold sweep: 0.60 → 77 % recall / 23 % false alarms, 0.70 → 69 % / 13 %, 0.80 → 56 % / 7 %."),
+  P("Per-frame results on the interim test set; voting and fusion lower false alarms further. The v2 model is about 300 kB; the camera firmware uses 40 % of flash and 20 % of static RAM (compiled; not yet measured on the board). Threshold sweep: 0.60 → 79 % recall / 23 % false alarms, 0.70 → 69 % / 14 %, 0.80 → 56 % / 7 %."),
 );
 
 add(
@@ -185,7 +186,7 @@ add(
     ["FR05 threshold", "0.70 per frame + 2-of-3 voting + fusion", "Threshold sweep ✔"],
     ["NFR01/NFR02 energy, speed", "int8 model, 240 MHz only during inference, 15 s timeout", "Latency and current on board open"],
     ["R11/R12, SEC6 two sources, false alarms", "Fusion rule; FUSION log → false_alarm_count.py", "53 unit tests ✔; field test open"],
-    ["SEC5, SEC7, SEC8", "Timeout and fail-safe, 2 h heartbeat, checksum and Wi-Fi off", "Unit tests ✔"],
+    ["SEC5, SEC7, SEC8", "Timeout and fail-safe, 2 h heartbeat, checksum and Wi-Fi off", "Timeout, fail-safe, checksum: unit tests ✔; heartbeat in fusion_demo, on board open"],
   ], [2700, 3626, 2700], { fontSize: 17 }),
   gap(),
   P("**Alignment with the other designs.** The dashboard wireframe shows a “Live Feed”, but the node sends no images; this area should show the AI label, confidence and votes. The 12-byte payload and the camera pins (D2/D3) still need to be agreed with the sensor-firmware and back-end owners."),
