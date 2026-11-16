@@ -1,0 +1,30 @@
+@startuml
+!include style.iuml
+title State machine: FireFusion on the MKR WAN 1300
+hide empty description
+
+[*] --> IDLE
+
+state IDLE : camera off (standby)\nno LoRa alarm
+state WAIT_CAMERA : CAPTURE sent\nwait max 15 s
+state SUSPECT : gas anomaly without\nvisual confirmation\n30 s timer running
+state RECHECK : second CAPTURE\nafter 30 s
+state ALARM : alarm sent over LoRa\nreason: CAMERA / FLAME /\nGAS_PERSIST
+
+IDLE --> WAIT_CAMERA : gasAnomaly\n[TRIGGER logged]
+WAIT_CAMERA --> ALARM : RESULT smoke / fire\n/ reason = CAMERA
+WAIT_CAMERA --> ALARM : RESULT normal or error\nand flame / reason = FLAME
+WAIT_CAMERA --> SUSPECT : RESULT normal or error\nand no flame
+SUSPECT --> IDLE : after 30 s, gas gone\n[CLEARED: false trigger]
+SUSPECT --> RECHECK : after 30 s, gas still there
+RECHECK --> ALARM : smoke / fire -> CAMERA\nflame -> FLAME\nnormal -> GAS_PERSIST (*)
+RECHECK --> IDLE : gas gone
+ALARM --> IDLE : gas and flame clear\nfor 60 s [CLEARED]
+
+note right of RECHECK
+  (*) escalateOnPersistentGas = true (default).
+  If false, the node stays in SUSPECT and
+  only raises an alarm with two agreeing
+  sources (strict SEC6 / R11 rule).
+end note
+@enduml

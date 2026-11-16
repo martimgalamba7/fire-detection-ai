@@ -1,0 +1,119 @@
+@startuml
+!include style.iuml
+title Class diagram: firmware modules of the AI part
+skinparam classAttributeIconSize 0
+
+package "MKR WAN 1300: FireFusion library" {
+  class CameraLink {
+    - _port : Stream&
+    - _timeoutMs : unsigned long
+    - _waiting : bool
+    - _result : CameraResult
+    + requestCapture() : bool
+    + sendPing()
+    + poll()
+    + hasResult() : bool
+    + takeResult() : CameraResult
+    + cameraReady() : bool
+    + {static} checksum(s, len) : uint8_t
+    + {static} verifyAndStrip(line) : int
+    - handleLine(line)
+  }
+  class CameraResult <<struct>> {
+    + ok : bool
+    + label : CameraLabel
+    + confidence : float
+    + votes : uint8_t
+    + frames : uint8_t
+    + error : char[24]
+  }
+  class FireFusion {
+    - _step : Step
+    - _state : FusionState
+    - _reason : AlarmReason
+    - _cfg : FusionConfig
+    + update(gasAnomaly, flame)
+    + state() : FusionState
+    + reason() : AlarmReason
+    + stateChanged() : bool
+    + fillPayload(PayloadData&)
+    - evaluate(CameraResult, flame)
+    - log(event)
+  }
+  class FusionConfig <<struct>> {
+    + recheckAfterMs = 30000
+    + clearAfterMs = 60000
+    + escalateOnPersistentGas = true
+  }
+  class PayloadData <<struct>> {
+    + state, reason, camLabel
+    + camConfidence, votes, frames
+    + gasAnomaly, flame
+    + mq7Raw, mq135Raw, co2Ppm
+    + temperatureC, batteryMv
+  }
+  class LoraPayload <<functions>> {
+    + encodePayload(PayloadData, out[12]) : uint8_t
+  }
+  enum FusionState {
+    IDLE
+    SUSPECT
+    ALARM
+  }
+  enum AlarmReason {
+    NONE
+    CAMERA
+    FLAME
+    GAS_PERSIST
+  }
+  enum CameraLabel {
+    NONE
+    NORMAL
+    SMOKE
+    FIRE
+  }
+}
+
+package "ESP32-CAM: esp32cam_inference sketch" {
+  class "esp32cam_inference.ino" as Ino <<sketch>> {
+    + setup() / loop()
+    + handleCommand(cmd)
+    + handleCapture()
+    + sendLine(line)
+    + verifyAndStrip(line) : bool
+  }
+  class LineReader {
+    + buf : char[49]
+    + poll(Stream&) : bool
+  }
+  class "classifier.h" as Clf <<module>> {
+    + classifyFrame(fb, FrameScores&) : ClassifyStatus
+    USE_MOCK_MODEL switch
+  }
+  class FrameScores <<struct>> {
+    + fire : float
+    + smoke : float
+    + normal : float
+  }
+  class "config.h" as Cfg <<config>> {
+    NUM_FRAMES = 3
+    MIN_VOTES = 2
+    CONFIDENCE_THRESHOLD = 0.70
+  }
+  class "Edge Impulse SDK" as EI <<library>> {
+    + run_classifier(signal, result)
+  }
+}
+
+FireFusion --> CameraLink : uses
+FireFusion --> FusionConfig
+FireFusion ..> PayloadData : fills
+CameraLink ..> CameraResult : produces
+LoraPayload ..> PayloadData : encodes
+Ino *-- "2" LineReader
+Ino --> Clf
+Ino ..> Cfg
+Clf ..> FrameScores
+Clf --> EI
+CameraLink .. Ino : UART protocol
+@enduml

@@ -1,0 +1,51 @@
+@startuml
+!include style.iuml
+title Activity diagram: one CAPTURE on the ESP32-CAM
+
+|Command handling|
+start
+:Standby\n80 MHz, Wi-Fi and BT off;
+:Line received on UART2;
+if (checksum valid\nor absent?) then (no)
+  :ERROR,bad_checksum;
+  stop
+endif
+if (command?) then (PING)
+  :PONG;
+  stop
+elseif (CAPTURE) then
+else (other)
+  :ERROR,unknown_command;
+  stop
+endif
+if (camera\ninitialised?) then (no)
+  :ERROR,camera_init;
+  stop
+endif
+:CPU to 240 MHz;
+|Inference loop (x NUM_FRAMES = 3)|
+repeat :Grab newest frame\n(QVGA JPEG);
+  if (frame?) then (no)
+    :ERROR,capture_failed;
+    stop
+  endif
+  :Decode JPEG -> RGB888;
+  :Centre crop, resize 96x96;
+  :MobileNetV1 int8\nP(fire), P(smoke), P(normal);
+  if (max(P(fire), P(smoke))\n>= 0.70?) then (yes)
+    :hazard vote + 1;
+  endif
+repeat while (more frames?) is (yes)
+-> no;
+|Voting and answer|
+if (hazard votes\n>= MIN_VOTES (2)?) then (yes)
+  :label = fire or smoke\n(higher summed score);
+  :conf = mean score of label\nover voting frames;
+else (no)
+  :label = normal;
+  :conf = mean P(normal);
+endif
+:RESULT,label,conf,k/n*XX;
+:CPU back to 80 MHz;
+stop
+@enduml

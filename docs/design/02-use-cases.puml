@@ -1,0 +1,36 @@
+@startuml
+!include style.iuml
+title Use case diagram: AI subsystem
+left to right direction
+
+actor "Environment\n(fire / false trigger)" as Env
+actor "Sensor hub\n(MKR WAN 1300)" as Hub
+actor "Ranger /\nDashboard user" as User
+actor "AI developer" as Dev
+actor "Edge Impulse\n(cloud ML platform)" as EI
+
+rectangle "AI subsystem" {
+  usecase "UC1 Detect early\nfire or smoke" as UC1
+  usecase "UC2 Classify images\non the camera" as UC2
+  usecase "UC3 Filter false triggers\n(fog, steam, dust, sky)" as UC3
+  usecase "UC4 Detect fire at night\n(flame sensor fallback)" as UC4
+  usecase "UC5 Send alarm with\nAI label and confidence" as UC5
+  usecase "UC6 Report node health\n(heartbeat, camera error)" as UC6
+  usecase "UC7 Collect labelled\ncamera images" as UC7
+  usecase "UC8 Train, evaluate\nand deploy the model" as UC8
+}
+
+Env --> UC1
+Hub --> UC1
+UC1 ..> UC2 : <<include>>
+UC2 ..> UC3 : <<include>>
+UC4 ..> UC1 : <<extend>>\n[camera says normal\nand flame present]
+UC1 ..> UC5 : <<include>>
+Hub --> UC6
+UC5 --> User
+UC6 --> User
+Dev --> UC7
+Dev --> UC8
+UC8 --> EI
+UC7 ..> UC8 : provides data
+@enduml

@@ -1,0 +1,60 @@
+@startuml
+!include style.iuml
+title Sequence diagram: trigger, inference, fusion and alert
+autonumber
+
+participant "Sensors" as S
+participant "Sensor firmware\n(MKR loop)" as Hub
+participant "FireFusion\n+ CameraLink" as F
+participant "ESP32-CAM\n(inference)" as C
+participant "LoRaWAN\n/ TTN" as L
+participant "Dashboard" as D
+
+== Boot ==
+C -> F : READY*4B
+F -> F : cameraReady = true
+
+== 1. Gas anomaly, camera confirms smoke ==
+S -> Hub : MQ readings above threshold
+Hub -> F : update(gasAnomaly = true, flame)
+F -> C : CAPTURE*44
+activate C
+C -> C : 3 frames, classify, vote
+C --> F : RESULT,smoke,0.87,2/3*XX
+deactivate C
+F -> F : state = ALARM (reason CAMERA)
+F -> Hub : stateChanged()
+Hub -> L : 12-byte payload (alarm)
+L -> D : alarm, label smoke, conf 0.87
+
+== 2. Gas anomaly, camera sees only fog ==
+Hub -> F : update(gasAnomaly = true, flame = false)
+F -> C : CAPTURE*44
+C --> F : RESULT,normal,0.91,3/3*XX
+F -> F : state = SUSPECT, start 30 s timer
+F -> Hub : stateChanged()
+Hub -> L : payload (suspect)
+... 30 s later ...
+alt gas still anomalous
+  F -> C : CAPTURE*44 (re-check)
+  C --> F : RESULT,normal,0.88,3/3*XX
+  F -> F : state = ALARM (reason GAS_PERSIST)
+  Hub -> L : payload (alarm)
+else gas gone
+  F -> F : state = IDLE (CLEARED, false trigger filtered)
+  Hub -> L : payload (idle)
+end
+
+== 3. Fault handling (SEC5: never wait forever) ==
+F -> C : CAPTURE*44
+alt camera does not answer
+  F -> F : timeout after 15 s -> error "timeout"
+else corrupted line
+  C --> F : RESULT,fi#e,...*3A
+  F -> F : error "bad_checksum"
+end
+F -> F : treat as "camera normal":\nflame -> ALARM, else SUSPECT
+
+== Heartbeat (R17 / SEC7) ==
+Hub -> L : every 2 h: payload (state = heartbeat)
+@enduml

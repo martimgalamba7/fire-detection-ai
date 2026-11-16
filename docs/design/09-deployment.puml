@@ -1,0 +1,35 @@
+@startuml
+!include style.iuml
+title Deployment diagram: hardware nodes, pins and links
+
+node "Fire detection node" {
+  node "ESP32-CAM\n(AI-Thinker)" as CAM {
+    artifact "esp32cam_inference.bin\n+ EI model (~300 kB)" as FW1
+    rectangle "OV2640 camera" as OV
+    rectangle "GPIO14 TX / GPIO13 RX\n(UART2, free SD pins)" as P1
+    rectangle "U0R / U0T (UART0)\nupload + debug only" as P0
+  }
+  node "Arduino MKR WAN 1300\n(SAMD21)" as MKR {
+    artifact "sensor sketch\n+ FireFusion library" as FW2
+    rectangle "D3 RX / D2 TX\n(SERCOM0 extra UART)" as P2
+    rectangle "A1-A3 MQ sensors, D0 flame,\nD11/D12 I2C BME280,\nD13/D14 Serial1 MH-Z19" as P3
+    rectangle "Murata LoRa module" as Radio
+  }
+  rectangle "External 5 V supply\n(solar + battery later)" as PSU
+}
+node "TTN gateway" as GW
+cloud "The Things Network" as TTN
+node "Ubuntu server\n(backend, DB, website)" as Srv
+node "Laptop (development)" as Dev {
+  artifact "Python tools, arduino-cli" as Tools
+}
+
+P1 -- P2 : 3 wires: TX, RX, GND\n115200 8N1, 3.3 V, *XX checksum
+PSU -- CAM : 5 V
+PSU -- MKR : 5 V
+Radio -- GW : LoRaWAN EU868\n12-byte payload
+GW -- TTN
+TTN -- Srv : HTTPS webhook / MQTT
+Dev -- P0 : CP2104 USB-serial\n(IO0 to GND to flash)
+Dev -- MKR : USB
+@enduml

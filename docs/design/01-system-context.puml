@@ -1,0 +1,38 @@
+@startuml
+!include style.iuml
+title AI subsystem in the Fire Detection System (system context)
+
+
+actor "Forest\n(smoke, fire, fog,\nsteam, sunlight)" as Env
+actor "Ranger /\nDashboard user" as User
+
+node "Fire detection node (tree-mounted, solar powered)" as Node {
+  rectangle "Sensor array\nMQ-7, MQ-9, MQ-135,\nMH-Z19 CO2, BME280,\nflame sensor" as Sensors
+  component "Arduino MKR WAN 1300\nsensor hub + **fusion logic**\n+ LoRa radio" as MKR #FFE0B2
+  component "ESP32-CAM\n**on-device image classifier**\n(MobileNetV1 int8)" as CAM #C8E6C9
+}
+
+cloud "The Things Network\n(LoRaWAN, OTAA)" as TTN
+node "Ubuntu server (EduCloud)" as Srv {
+  component "Backend / API" as API
+  database "Database\nreadings, alarms" as DB
+  component "Website dashboard" as Web
+}
+
+Env --> Sensors : gas, heat,\nflame (IR)
+Env --> CAM : light (images)
+Sensors --> MKR : analog / I2C /\nUART / digital
+MKR --> CAM : "CAPTURE" (UART)
+CAM --> MKR : "RESULT,label,conf,votes"
+MKR --> TTN : 12-byte payload\n(alarm, heartbeat)
+TTN --> API : webhook / MQTT
+API --> DB
+DB --> Web
+Web --> User : alarm, AI label,\nconfidence, sensor values
+
+note bottom of CAM
+  Images never leave the camera
+  (NFR04, SEC8). Only a label,
+  a confidence and a vote count.
+end note
+@enduml

@@ -1,0 +1,42 @@
+@startuml
+!include style.iuml
+title Activity diagram: machine learning pipeline (data to device)
+
+|AI developer (laptop)|
+start
+fork
+  :Download D-Fire\n(21,527 images, YOLO labels);
+  :convert_dfire.py\nYOLO boxes -> smoke / fire / normal\ndrop tiny smoke (< 5 % of image);
+fork again
+  :esp32cam_collector\nlabelled ESP32-CAM photos\n(incl. fog, steam, vape, sky);
+end fork
+:preprocess.py\nresize 320x240, dHash de-duplication,\nsplit train / val / test;
+note right
+  Test set = own camera
+  images only (never trained on)
+end note
+:stats.py\nclass balance per source;
+:upload_edge_impulse.py\n(Ingestion API key in .env);
+|Edge Impulse (cloud)|
+:Impulse: 96x96 RGB, Fit shortest axis;
+:Transfer learning\nMobileNetV1 0.25, 50 epochs,\nlr 0.0005, augmentation;
+:int8 quantisation;
+:Versioning (store version);
+fork
+  :Export TFLite int8 (.lite);
+fork again
+  :Export Arduino library\n(EON compiler);
+end fork
+|AI developer (laptop)|
+:predict_tflite.py + confusion_matrix.py\naccuracy, recall, false alarms,\nthreshold sweep;
+if (good enough and better\nthan previous version?) then (yes)
+  :Install library, USE_MOCK_MODEL 0,\ncompile esp32cam_inference;
+  :Update model card;
+else (no)
+  :Change data or model\n(v1 -> v2 -> v3 ...);
+  stop
+endif
+|ESP32-CAM|
+:Flash and measure on device\n(latency, current, field tests);
+stop
+@enduml

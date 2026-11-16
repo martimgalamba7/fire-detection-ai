@@ -1,0 +1,46 @@
+@startuml
+!include style.iuml
+title AI subsystem architecture and topology (layers per board)
+
+package "ESP32-CAM (AI-Thinker, OV2640, 4 MB PSRAM)" as CAMB {
+  package "Acquisition layer" {
+    component "Camera driver\n(esp_camera, QVGA JPEG,\nGRAB_LATEST)" as Drv
+  }
+  package "Inference layer" {
+    component "Pre-processing\nJPEG -> RGB888,\ncentre crop, 96x96" as Pre
+    component "Edge Impulse SDK\n(EON compiled\nMobileNetV1 0.25 int8)" as Model
+  }
+  package "Decision layer" {
+    component "Voting\nN frames, threshold,\nmin votes" as Vote
+  }
+  package "Communication layer" {
+    component "Protocol handler\nline reader, *XX checksum,\nRESULT / ERROR" as CProto
+  }
+  Drv --> Pre : frame buffer
+  Pre --> Model : 96x96x3
+  Model --> Vote : softmax scores
+  Vote --> CProto : label, conf, votes
+}
+
+package "Arduino MKR WAN 1300 (SAMD21)" as MKRB {
+  package "Sensor layer (sensor firmware)" {
+    component "Gas thresholds\n(R9/R10)" as Gas
+    component "Flame input (D0)" as Flame
+  }
+  package "FireFusion library (AI part)" {
+    component "CameraLink\nUART client,\ntimeout, checksum" as Link
+    component "FireFusion\nstate machine\nIDLE / SUSPECT / ALARM" as Fusion
+    component "LoraPayload\n12-byte encoder" as Payload
+  }
+  component "LoRaWAN modem\n(MKRWAN, OTAA)" as Modem
+  Gas --> Fusion : gasAnomaly
+  Flame --> Fusion : flame
+  Fusion --> Link : requestCapture()
+  Link --> Fusion : CameraResult
+  Fusion --> Payload : state, reason, AI result
+  Payload --> Modem : 12 bytes
+}
+
+CProto <--> Link : UART2 GPIO13/14  <->  SERCOM0 D2/D3\n115200 8N1, 3.3 V
+Modem --> "TTN" : LoRaWAN (EU868)
+@enduml
