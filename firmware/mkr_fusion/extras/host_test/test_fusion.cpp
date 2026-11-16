@@ -11,6 +11,13 @@ unsigned long g_fakeMillis = 0;
 FakeSerial Serial;
 
 static int failures = 0, checks = 0;
+
+// Adds the "*XX" checksum, like the camera firmware does before sending.
+static std::string cs(const std::string &msg) {
+  char b[4];
+  snprintf(b, sizeof b, "*%02X", CameraLink::checksum(msg.c_str(), msg.size()));
+  return msg + b;
+}
 #define CHECK(cond)                                                        \
   do {                                                                     \
     checks++;                                                              \
@@ -27,11 +34,11 @@ struct Rig {
 
   int captures() const {   // number of CAPTURE commands sent so far
     int n = 0;
-    for (size_t p = cam.out.find("CAPTURE\n"); p != std::string::npos; p = cam.out.find("CAPTURE\n", p + 1)) n++;
+    for (size_t p = cam.out.find("CAPTURE*"); p != std::string::npos; p = cam.out.find("CAPTURE*", p + 1)) n++;
     return n;
   }
   void tick(bool gas, bool flame, unsigned long ms = 10) { advanceMillis(ms); fusion.update(gas, flame); }
-  void camAnswers(const char *line, bool gas, bool flame) { cam.inject(std::string(line) + "\n"); tick(gas, flame); }
+  void camAnswers(const char *line, bool gas, bool flame) { cam.inject(cs(line) + "\n"); tick(gas, flame); }
 };
 
 static void test_no_gas_no_capture() {
@@ -151,22 +158,39 @@ static void test_parser_robustness() {
   puts("parser ignores boot noise, handles READY and bad lines");
   FakeSerial cam;
   CameraLink link(cam, 15000);
-  cam.inject("ets Jun  8 2016 00:22:57\r\nrst:0x1 (POWERON_RESET)\r\nREADY\r\n");
+  cam.inject("ets Jun  8 2016 00:22:57\r\nrst:0x1 (POWERON_RESET)\r\n" + cs("READY") + "\r\n");
   link.poll();
   CHECK(link.cameraReady());
   CHECK(!link.hasResult());               // nothing was asked
   link.requestCapture();
-  cam.inject("garbage line\nRESULT,banana,0.5,1/3\n");
+  cam.inject("garbage line\n" + cs("RESULT,banana,0.5,1/3") + "\n");
   link.poll();
   CHECK(link.hasResult());
   CameraResult res = link.takeResult();
   CHECK(!res.ok && strcmp(res.error, "bad_label") == 0);
   link.requestCapture();
-  cam.inject("RESULT,fire,0.99,3/3\r\n");
+  cam.inject(cs("RESULT,fire,0.99,3/3") + "\r\n");
   link.poll();
   res = link.takeResult();
   CHECK(res.ok && res.label == CAM_FIRE && res.confidence > 0.98f && res.votes == 3);
   CHECK(link.requestCapture());            // idle again, new request allowed
+}
+
+static void test_checksum() {
+  puts("checksum (SEC8): commands carry *XX, corrupted lines are rejected");
+  CHECK(cs("PONG") == "PONG*16");
+  FakeSerial cam;
+  CameraLink link(cam, 15000);
+  link.requestCapture();
+  CHECK(cam.out == cs("CAPTURE") + "\n");
+  cam.inject("RESULT,fire,0.99,3/3\n");          // no checksum: ignored
+  link.poll();
+  CHECK(!link.hasResult());
+  cam.inject("RESULT,fire,0.99,3/3*00\n");       // wrong checksum: error
+  link.poll();
+  CHECK(link.hasResult());
+  CameraResult r = link.takeResult();
+  CHECK(!r.ok && strcmp(r.error, "bad_checksum") == 0);
 }
 
 static void test_payload() {
@@ -212,6 +236,7 @@ int main() {
   test_camera_error_with_flame();
   test_alarm_clears();
   test_parser_robustness();
+  test_checksum();
   test_payload();
   test_log_format();
   printf("\n%d checks, %d failed\n", checks, failures);

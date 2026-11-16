@@ -1,7 +1,25 @@
 # UART protocol: MKR WAN 1300 <-> ESP32-CAM
 
 Plain-text, line-based protocol. Every message is one ASCII line ending in `\n`
-(a `\r` before it is ignored). Maximum line length: 48 characters.
+(the camera also accepts `\r`). Maximum line length: 48 characters.
+
+## Checksum (security requirement SEC8)
+
+Every line on the wire carries a checksum, as in NMEA GPS sentences:
+
+```
+<message>*<XX>\n        XX = XOR of all bytes of <message>, two upper-case hex digits
+```
+
+Examples: `CAPTURE*44`, `PING*10`, `PONG*16`, `RESULT,smoke,0.87,2/3*<XX>`.
+
+* The MKR always sends the checksum and accepts camera lines **only** with a valid checksum.
+  Lines without one (ESP32 boot text) are ignored. A wrong checksum during a request ends it with the
+  MKR-side error `bad_checksum`, so corrupted data is never trusted.
+* The camera answers a wrong checksum with `ERROR,bad_checksum`. It still accepts commands without a
+  checksum, so `CAPTURE` can be typed by hand in the serial monitor for testing.
+
+The tables below show the messages without the `*XX` suffix.
 
 ## Physical layer
 
@@ -81,6 +99,7 @@ whether the label is `smoke`/`fire`.
 | `inference_failed` | Edge Impulse classifier returned an error. |
 | `unknown_command` | Received a line that is not a known command. |
 | `line_too_long` | Received more than 48 characters without `\n`. |
+| `bad_checksum` | The command's `*XX` checksum does not match. |
 
 ## Timing
 

@@ -6,7 +6,7 @@
 ![Edge Impulse](https://img.shields.io/badge/Edge%20Impulse-MobileNetV1%20int8-blueviolet)
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB)
 ![LoRaWAN](https://img.shields.io/badge/LoRaWAN-12%20bytes-orange)
-![Tests](https://img.shields.io/badge/Tests-48%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/Tests-53%20passing-brightgreen)
 
 On-device smoke and fire recognition for a solar-powered IoT node mounted on a tree.
 The node is meant to spot a wildfire early and send the alert over LoRaWAN.
@@ -32,7 +32,7 @@ Only a label, a confidence and a vote count leave the camera, never the image.
 | Dataset tools, upload to Edge Impulse | ✅ done, tested |
 | Model v2 (MobileNetV1 0.25, 96x96 RGB, int8) | ✅ trained, evaluated on the laptop |
 | Camera firmware with the real model | ✅ compiles for the ESP32-CAM (40% flash, 20% RAM) |
-| MKR fusion library | ✅ compiles for the MKR WAN 1300, 48 unit tests pass on the laptop |
+| MKR fusion library | ✅ compiles for the MKR WAN 1300, 53 unit tests pass on the laptop |
 | Test on the real hardware, own camera images | ⏳ next step |
 
 ### Model results

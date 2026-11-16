@@ -34,7 +34,12 @@ public:
 
   static const char *labelName(CameraLabel l);
 
+  // Protocol helpers, public so they can be unit-tested.
+  static uint8_t checksum(const char *s, size_t len);
+  static int verifyAndStrip(char *line);
+
 private:
+  void sendCommand(const char *cmd);
   void handleLine(char *line);
   void finish(const CameraResult &r);
 

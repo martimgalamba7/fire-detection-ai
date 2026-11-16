@@ -14,7 +14,7 @@
 CameraLink camera(CameraSerial, 15000);   // 15 s timeout
 FireFusion fusion(camera, &Serial);       // logs FUSION,... lines to Serial
 
-const unsigned long HEARTBEAT_MS = 15UL * 60UL * 1000UL;  // R17: every 15 min (TODO agree)
+const unsigned long HEARTBEAT_MS = 2UL * 60UL * 60UL * 1000UL;  // R17 / SEC7: every 2 hours
 unsigned long lastHeartbeat = 0;
 // --------------------------------------------------------------------------
 

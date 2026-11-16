@@ -3,18 +3,45 @@
 CameraLink::CameraLink(Stream &port, unsigned long timeoutMs)
     : _port(port), _timeoutMs(timeoutMs) {}
 
+// Checksum (security requirement SEC8): XOR of all message characters,
+// sent as "*XX" after the message, e.g. "CAPTURE*44". See docs/uart-protocol.md.
+uint8_t CameraLink::checksum(const char *s, size_t len) {
+  uint8_t c = 0;
+  for (size_t i = 0; i < len; i++) c ^= (uint8_t)s[i];
+  return c;
+}
+
+void CameraLink::sendCommand(const char *cmd) {
+  char cs[4];
+  snprintf(cs, sizeof(cs), "*%02X", checksum(cmd, strlen(cmd)));
+  _port.print(cmd);
+  _port.print(cs);
+  _port.print('\n');
+}
+
+// Returns 1 = valid checksum (stripped), 0 = no checksum, -1 = wrong checksum.
+int CameraLink::verifyAndStrip(char *line) {
+  char *star = strrchr(line, '*');
+  if (!star) return 0;
+  if (strlen(star + 1) != 2) return -1;
+  unsigned int expected = (unsigned int)strtoul(star + 1, nullptr, 16);
+  size_t len = star - line;
+  *star = '\0';
+  return checksum(line, len) == expected ? 1 : -1;
+}
+
 bool CameraLink::requestCapture() {
   if (_waiting) return false;
   while (_port.available()) _port.read();   // drop old bytes
   _len = 0;
-  _port.print("CAPTURE\n");
+  sendCommand("CAPTURE");
   _sentAt = millis();
   _waiting = true;
   _hasResult = false;
   return true;
 }
 
-void CameraLink::sendPing() { _port.print("PING\n"); }
+void CameraLink::sendPing() { sendCommand("PING"); }
 
 void CameraLink::poll() {
   while (_port.available()) {
@@ -59,8 +86,20 @@ void CameraLink::finish(const CameraResult &r) {
   _waiting = false;
 }
 
-// Parses one line from the camera. Unknown lines (e.g. ESP32 boot text) are ignored.
+// Parses one line from the camera. Lines without a checksum (e.g. ESP32 boot
+// text) are ignored. A line with a wrong checksum ends a running request with
+// the error "bad_checksum", so the fusion logic never trusts corrupted data.
 void CameraLink::handleLine(char *line) {
+  int cs = verifyAndStrip(line);
+  if (cs == 0) return;
+  if (cs < 0) {
+    if (_waiting) {
+      CameraResult r = {};
+      strncpy(r.error, "bad_checksum", sizeof(r.error) - 1);
+      finish(r);
+    }
+    return;
+  }
   if (strcmp(line, "READY") == 0 || strcmp(line, "PONG") == 0) {
     _ready = true;
     return;

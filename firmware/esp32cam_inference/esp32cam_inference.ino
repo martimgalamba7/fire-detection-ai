@@ -33,12 +33,37 @@ static const char *LABEL_NORMAL = "normal";
 // ---------------------------------------------------------------------------
 // Output helpers: protocol lines go to the MKR (and to USB when debugging).
 // ---------------------------------------------------------------------------
+// Checksum (security requirement SEC8): XOR of all characters of the message,
+// sent as "*XX" (two hex digits) after the message, like NMEA GPS sentences.
+// Example: "PONG" -> "PONG*16". It detects wires picking up noise or bytes lost.
+uint8_t checksum(const char *s, size_t len) {
+  uint8_t c = 0;
+  for (size_t i = 0; i < len; i++) c ^= (uint8_t)s[i];
+  return c;
+}
+
 void sendLine(const String &line) {
+  char cs[4];
+  snprintf(cs, sizeof(cs), "*%02X", checksum(line.c_str(), line.length()));
   Link.print(line);
+  Link.print(cs);
   Link.print('\n');
 #if ACCEPT_DEBUG_COMMANDS
-  Serial.println(line);
+  Serial.println(line + cs);
 #endif
+}
+
+// Checks and strips a "*XX" checksum in place. Lines without '*' are accepted,
+// so commands can still be typed by hand in the serial monitor for testing.
+// Returns false when a checksum is present but wrong.
+bool verifyAndStrip(char *line) {
+  char *star = strrchr(line, '*');
+  if (!star) return true;
+  size_t len = star - line;
+  unsigned int expected = 0;
+  if (strlen(star + 1) != 2 || sscanf(star + 1, "%2X", &expected) != 1) return false;
+  *star = '\0';
+  return checksum(line, len) == expected;
 }
 
 void debug(const String &msg) {
@@ -167,7 +192,9 @@ struct LineReader {
 
 LineReader linkReader, usbReader;
 
-void handleCommand(const char *cmd) {
+void handleCommand(char *cmd) {
+  if (strlen(cmd) == 0) return;                          // empty line: ignore
+  if (!verifyAndStrip(cmd)) { sendLine("ERROR,bad_checksum"); return; }
   if (strcmp(cmd, "CAPTURE") == 0)      handleCapture();
   else if (strcmp(cmd, "PING") == 0)    sendLine("PONG");
   else if (strlen(cmd) == 0)            return;   // empty line: ignore
